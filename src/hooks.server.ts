@@ -1,4 +1,4 @@
-import { validateSession, deleteSession } from '$lib/server/auth';
+import { validateSession } from '$lib/server/auth';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -9,7 +9,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 		if (user) {
 			event.locals.user = user;
 		} else {
-			// Sesion invalida o expirada
 			event.cookies.set('session', '', { path: '/', maxAge: 0, httpOnly: true, sameSite: 'lax' });
 		}
 	} else {
@@ -20,9 +19,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handleError: HandleServerError = ({ error: err }) => {
-	console.error('Server error:', err);
+export const handleError: HandleServerError = ({ error: err, event }) => {
+	console.error('Server error:', err, 'URL:', event.url.pathname);
+	const message = err instanceof Error ? err.message : 'Error interno del servidor';
+	const stack = err instanceof Error ? err.stack?.split('\n').slice(0, 5).join('\n') : undefined;
 	return {
-		message: 'Error interno del servidor'
+		message,
+		stack,
+		path: event.url.pathname
 	};
 };
