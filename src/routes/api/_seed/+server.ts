@@ -18,11 +18,19 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		await getDB();
 
-		// Limpiar colecciones completas (dropea datos e indexes existentes)
-		await mongoose.connection.db.dropCollection('users').catch(() => {});
-		await mongoose.connection.db.dropCollection('categories').catch(() => {});
-		await mongoose.connection.db.dropCollection('transactions').catch(() => {});
-		await mongoose.connection.db.dropCollection('sessions').catch(() => {});
+		// Asegurar que las colecciones existen
+		try { await mongoose.connection.db.createCollection('users'); } catch {}
+		try { await mongoose.connection.db.createCollection('categories'); } catch {}
+		try { await mongoose.connection.db.createCollection('transactions'); } catch {}
+
+		// Eliminar el index Username si existe (de esquemas previos)
+		try {
+			await mongoose.connection.db.collection('users').dropIndex('Username');
+		} catch {}
+
+		await User.deleteMany({});
+		await Category.deleteMany({});
+		await Transaction.deleteMany({});
 
 		const hash = bcrypt.hashSync('Test1234!', 12);
 
