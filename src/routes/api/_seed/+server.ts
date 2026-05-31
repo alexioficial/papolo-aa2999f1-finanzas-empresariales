@@ -19,24 +19,32 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const hash = bcrypt.hashSync('Test1234!', 12);
 
-		const admin = await User.findOneAndUpdate(
-			{ email: 'test@papolo.dev' },
-			{ email: 'test@papolo.dev', passwordHash: hash, name: 'Test Admin', role: 'admin', active: true },
-			{ upsert: true, new: true }
-		);
+		// Limpiar datos existentes
+		await User.deleteMany({});
+		await Category.deleteMany({});
 
-		const user = await User.findOneAndUpdate(
-			{ email: 'user@papolo.dev' },
-			{ email: 'user@papolo.dev', passwordHash: hash, name: 'Test User', role: 'user', active: true },
-			{ upsert: true, new: true }
-		);
+		const admin = await User.create({
+			email: 'test@papolo.dev',
+			passwordHash: hash,
+			name: 'Test Admin',
+			role: 'admin',
+			active: true
+		});
+
+		await User.create({
+			email: 'user@papolo.dev',
+			passwordHash: hash,
+			name: 'Test User',
+			role: 'user',
+			active: true
+		});
 
 		const cats = await Promise.all([
-			Category.findOneAndUpdate({ name: 'Ventas' }, { name: 'Ventas', type: 'income', color: '#22c55e', description: 'Ingresos por ventas', isDefault: true, active: true }, { upsert: true, new: true }),
-			Category.findOneAndUpdate({ name: 'Salarios' }, { name: 'Salarios', type: 'expense', color: '#ef4444', description: 'Pagos de salarios', isDefault: true, active: true }, { upsert: true, new: true }),
-			Category.findOneAndUpdate({ name: 'Alquiler' }, { name: 'Alquiler', type: 'expense', color: '#f59e0b', description: 'Alquiler oficina', isDefault: true, active: true }, { upsert: true, new: true }),
-			Category.findOneAndUpdate({ name: 'Marketing' }, { name: 'Marketing', type: 'expense', color: '#8b5cf6', description: 'Publicidad y marketing', isDefault: true, active: true }, { upsert: true, new: true }),
-			Category.findOneAndUpdate({ name: 'Servicios' }, { name: 'Servicios', type: 'expense', color: '#06b6d4', description: 'Servicios basicos', isDefault: true, active: true }, { upsert: true, new: true })
+			Category.create({ name: 'Ventas', type: 'income', color: '#22c55e', description: 'Ingresos por ventas', isDefault: true }),
+			Category.create({ name: 'Salarios', type: 'expense', color: '#ef4444', description: 'Pagos de salarios', isDefault: true }),
+			Category.create({ name: 'Alquiler', type: 'expense', color: '#f59e0b', description: 'Alquiler oficina', isDefault: true }),
+			Category.create({ name: 'Marketing', type: 'expense', color: '#8b5cf6', description: 'Publicidad y marketing', isDefault: true }),
+			Category.create({ name: 'Servicios', type: 'expense', color: '#06b6d4', description: 'Servicios basicos', isDefault: true })
 		]);
 
 		await Transaction.deleteMany({});
@@ -52,14 +60,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			{ type: 'income', amount: 50000, category: cats[0]._id, description: 'Proyecto especial', date: new Date('2025-05-25'), createdBy: admin._id }
 		]);
 
-		const txCount = await Transaction.countDocuments();
-
-		return json({
-			ok: true, seeded: true,
-			users: { admin: admin.email, user: user.email },
-			categories: cats.length,
-			transactions: txCount
-		});
+		return json({ ok: true, seeded: true, transactions: 9 });
 	} catch (err) {
 		console.error('Seed error:', err);
 		return json({ ok: false, error: String(err) }, { status: 500 });
