@@ -36,7 +36,6 @@ export async function validateSession(sessionId: string): Promise<App.User | nul
 		}
 		const user = session.userId as unknown as { _id: string; email: string; name: string; role: string };
 		if (!user || !user._id) return null;
-		// Sliding session: renovar expiracion
 		const newExpires = new Date(Date.now() + SESSION_DURATION_MS);
 		await Session.updateOne({ _id: session._id }, { $set: { expiresAt: newExpires } });
 		return {
@@ -59,26 +58,15 @@ export async function deleteSession(sessionId: string): Promise<void> {
 	}
 }
 
-export function getSessionCookie(sessionId: string, expiresAt: Date): string {
-	const isProd = process.env.NODE_ENV === 'production';
-	return `session=${sessionId}; HttpOnly; Path=/; SameSite=Lax; ${
-		isProd ? 'Secure; ' : ''
-	}Expires=${expiresAt.toUTCString()}`;
-}
-
-export function getLogoutCookie(): string {
-	return 'session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0';
-}
-
-export function requireAuth(event: RequestEvent): App.User {
-	if (!event.locals.user) {
+export function requireAuth(locals: App.Locals): App.User {
+	if (!locals.user) {
 		throw redirect(303, '/login');
 	}
-	return event.locals.user;
+	return locals.user;
 }
 
-export function requireAdmin(event: RequestEvent): App.User {
-	const user = requireAuth(event);
+export function requireAdmin(locals: App.Locals): App.User {
+	const user = requireAuth(locals);
 	if (user.role !== 'admin') {
 		throw error(403, 'Acceso denegado — se requieren permisos de administrador');
 	}
