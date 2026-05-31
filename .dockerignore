@@ -8,7 +8,6 @@ dist
 .env
 .env.*
 .DS_Store
-scripts
 README.md
 ARCH.md
 DESIGN.md
