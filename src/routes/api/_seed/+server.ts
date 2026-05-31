@@ -5,6 +5,7 @@ import { User } from '$lib/server/models/User';
 import { Category } from '$lib/server/models/Category';
 import { Transaction } from '$lib/server/models/Transaction';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 const SEED_TOKEN = process.env.SEED_TOKEN || 'dev-seed-token';
 
@@ -17,11 +18,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		await getDB();
 
-		const hash = bcrypt.hashSync('Test1234!', 12);
+		// Limpiar colecciones completas (dropea datos e indexes existentes)
+		await mongoose.connection.db.dropCollection('users').catch(() => {});
+		await mongoose.connection.db.dropCollection('categories').catch(() => {});
+		await mongoose.connection.db.dropCollection('transactions').catch(() => {});
+		await mongoose.connection.db.dropCollection('sessions').catch(() => {});
 
-		// Limpiar datos existentes
-		await User.deleteMany({});
-		await Category.deleteMany({});
+		const hash = bcrypt.hashSync('Test1234!', 12);
 
 		const admin = await User.create({
 			email: 'test@papolo.dev',
@@ -47,7 +50,6 @@ export const POST: RequestHandler = async ({ request }) => {
 			Category.create({ name: 'Servicios', type: 'expense', color: '#06b6d4', description: 'Servicios basicos', isDefault: true })
 		]);
 
-		await Transaction.deleteMany({});
 		await Transaction.insertMany([
 			{ type: 'income', amount: 150000, category: cats[0]._id, description: 'Venta software Cliente A', date: new Date('2025-05-15'), createdBy: admin._id },
 			{ type: 'income', amount: 85000, category: cats[0]._id, description: 'Consultoria Cliente B', date: new Date('2025-05-20'), createdBy: admin._id },
